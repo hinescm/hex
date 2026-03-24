@@ -1,41 +1,25 @@
-# Hex Game (Python/Pygame)
+# Hex & Brouwer: Topology Lab (MAT 436)
 
-A fully functional implementation of the strategy board game **Hex**, built using Python and the Pygame library. This version features a procedural hexagonal grid, custom boundary rendering, and an automated victory-path detection system.
+An interactive simulation exploring the discrete topological foundations of the Brouwer Fixed-Point Theorem. This tool uses the game of Hex and Sperner's Lemma to demonstrate why a continuous mapping of a disk to itself must contain at least one fixed point.
 
-## 🎮 Features
-* **Three Game Modes:** * **Human vs Human:** Local multiplayer.
-    * **Human vs AI:** Play against a randomized AI opponent.
-    * **AI vs AI:** Watch two computer players compete.
-* **Visual Goal Indicators:** Refined zigzag boundaries that define player objectives without bleeding into the interior board.
-* **Victory Path Highlighting:** Upon a win, the specific chain of hexagons connecting the sides is highlighted with a Gold outline.
-* **Pointy-Top Geometry:** Uses a staggered hexagonal coordinate system for accurate Hex topology.
+## 🔬 Core Features
+* **Hex Game Engine:** Play Human vs. Human, Human vs. AI, or AI vs. AI on a 5x5 Rhombus.
+* **Dual Graph Visualization:** Toggles a triangular mesh representing the dual graph of the hexagonal tiling.
+* **Sperner Lemma Overlay:** Highlights "Sperner Triangles" (cells where Red, Blue, and White meet) to show the "seeds" of connectivity.
+* **Vector Field Mode:** Visualizes the board state as a discrete vector field, approximating the flow toward a fixed point.
+* **Step-by-Step Analysis:** Full history navigation to observe how topological features shift and merge during gameplay.
 
-## 🛠️ Requirements
-* Python 3.x
-* Pygame library
+## 🎓 Mathematical Context
+This lab is designed for **Berea College MAT 436 (Topology)**. It serves as a visual aid for the following concepts:
 
-## 🚀 How to Run
-1.  **Install Pygame:**
-    ```bash
-    pip install pygame
-    ```
-2.  **Run the script:**
-    ```bash
-    python hex_game.py
-    ```
+1.  **Sperner’s Lemma:** Proving that any valid coloring of a triangulated simplex contains an odd number of "complete" triangles.
+2.  **Hex Theorem:** Demonstrating that the game of Hex cannot end in a draw, which is logically equivalent to the Brouwer Fixed-Point Theorem.
+3.  **Harkness Discussion:** Students should use the "Step" feature to identify why Sperner triangles never disappear, even as the board reaches a high state of entropy.
 
-## 🧠 Game Rules
-Hex is a connection game played on a rhombus-shaped grid of hexagons.
-* **Red Player:** Must form an unbroken chain of red hexagons connecting the **top** and **bottom** red boundaries.
-* **Blue Player:** Must form an unbroken chain of blue hexagons connecting the **left** and **right** blue boundaries.
-* The game can never end in a draw; the topology of the grid ensures one player must always be able to complete a path.
+## 🛠️ Requirements & Setup
+* **Python 3.x**
+* **Pygame** (`pip install pygame`)
 
-## 📐 Technical Details: Boundary Rendering
-The game uses a **Pointy-Top** hexagon orientation. To create a continuous perimeter, the rendering logic targets specific vertices ($V_0$ through $V_5$) to create "V-shaped" zigzag borders:
-
-* **Red (Top/Bottom):** Highlights the slanted top edges of the first row and slanted bottom edges of the last row.
-* **Blue (Left/Right):** Highlights the slanted side edges of the first and last columns.
-* **Vertex Math:** Centers are calculated using $x = col \cdot \text{width} + (row \cdot \text{width} / 2)$, creating the classic $60^\circ$ offset required for a Hex board.
-
----
-*Developed as a project exploring hexagonal tiling, topological connectivity, and pathfinding algorithms.*
+To run the lab:
+```bash
+python hex_brouwer_lab.py
