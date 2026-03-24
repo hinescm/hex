@@ -7,7 +7,7 @@ import sys
 BOARD_SIZE = 5 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
-CAPTION = "Hex Game - Final Boundary & Victory Path"
+CAPTION = "Hex Game - Topology & Perimeter Final"
 HEX_RADIUS = 30 
 
 # --- Global Colors ---
@@ -26,7 +26,6 @@ def initialize_board(board_size):
 def get_neighbors(board, r, c):
     board_size = len(board)
     neighbors = []
-    # Pointy-top staggered neighbors
     directions = [(0, -1), (0, 1), (-1, 0), (1, 0), (-1, 1), (1, -1)]
     for dr, dc in directions:
         nr, nc = r + dr, c + dc
@@ -35,7 +34,6 @@ def get_neighbors(board, r, c):
     return neighbors
 
 def find_winning_path(board, player_id):
-    """Returns the list of coordinates (r, c) forming the winning connection."""
     board_size = len(board)
     visited = set()
     
@@ -44,12 +42,8 @@ def find_winning_path(board, player_id):
             return None
         visited.add((r, c))
         new_path = path + [(r, c)]
-        
-        # Red wins Top -> Bottom
         if player_id == 1 and r == board_size - 1: return new_path
-        # Blue wins Left -> Right
         if player_id == 2 and c == board_size - 1: return new_path
-        
         for nr, nc in get_neighbors(board, r, c):
             res = dfs(nr, nc, new_path)
             if res: return res
@@ -81,13 +75,11 @@ def ai_make_move(board):
 # --- UI & Rendering Helpers ---
 def _get_relative_hex_center(row, col, hex_radius):
     hex_width = hex_radius * math.sqrt(3)
-    # Rhombus shift for the classic Hex board shape
     x = col * hex_width + (row * hex_width / 2)
     y = row * hex_radius * 1.5
     return x, y
 
 def get_hex_vertices(center_x, center_y, hex_radius):
-    # Vertices for pointy-top orientation (30 deg start)
     return [(int(center_x + hex_radius * math.cos(math.pi / 180 * (30 + 60 * i))),
              int(center_y + hex_radius * math.sin(math.pi / 180 * (30 + 60 * i)))) for i in range(6)]
 
@@ -110,7 +102,6 @@ def play_gui_game(board_size):
             cx, cy = _get_relative_hex_center(r, c, HEX_RADIUS)
             for vx, vy in get_hex_vertices(cx, cy, HEX_RADIUS):
                 min_x, max_x, min_y, max_y = min(min_x, vx), max(max_x, vx), min(min_y, vy), max(max_y, vy)
-    
     offset_x = (SCREEN_WIDTH - (max_x - min_x)) / 2 - min_x
     offset_y = (SCREEN_HEIGHT - (max_y - min_y)) / 2 - min_y
 
@@ -123,28 +114,20 @@ def play_gui_game(board_size):
 
     running = True
     while running:
-        # Determine if it is currently an AI's turn
         current_is_ai = (game_mode == 'ava') or (game_mode == 'hva' and current_player == 2)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mx, my = event.pos
-                
-                # Mode selection
                 if game_mode is None:
                     for key, val in modes.items():
                         if val['rect'].collidepoint(mx, my):
                             game_mode, game_board, current_player, game_over, win_path = key, initialize_board(board_size), 1, False, []
                             message = f"Player {current_player}'s Turn"
-                
-                # Reset button
                 elif replay_rect.collidepoint(mx, my):
                     game_mode, message = None, "Select Game Mode"
-                
-                # Human Move
                 elif not game_over and not current_is_ai:
                     for r in range(board_size):
                         for c in range(board_size):
@@ -159,7 +142,6 @@ def play_gui_game(board_size):
                                         current_player = 3 - current_player
                                         message = f"Player {current_player}'s Turn"
 
-        # AI Turn Execution
         if game_mode is not None and not game_over and current_is_ai:
             pygame.time.delay(600)
             move = ai_make_move(game_board)
@@ -180,52 +162,30 @@ def play_gui_game(board_size):
                     px, py = cx + offset_x, cy + offset_y
                     verts = get_hex_vertices(px, py, HEX_RADIUS)
                     
-        # --- Zigzag Boundary Highlights ---
-        b_thick = 8
-        if game_mode is not None:
-            for r in range(board_size):
-                for c in range(board_size):
-                    cx, cy = _get_relative_hex_center(r, c, HEX_RADIUS)
-                    px, py = cx + offset_x, cy + offset_y
-                    verts = get_hex_vertices(px, py, HEX_RADIUS)
-                    
-                    # Red Top (Row 0): Slanted top "V"
-                    if r == 0:
+                    # --- Boundary Rendering ---
+                    b_thick = 8
+                    if r == 0: # Red Top
                         pygame.draw.line(screen, RED, verts[4], verts[5], b_thick)
                         pygame.draw.line(screen, RED, verts[3], verts[4], b_thick)
-                    
-                    # Red Bottom (Row n-1): Slanted bottom "V"
-                    if r == board_size - 1:
+                    if r == board_size - 1: # Red Bottom
                         pygame.draw.line(screen, RED, verts[0], verts[1], b_thick)
                         pygame.draw.line(screen, RED, verts[1], verts[2], b_thick)
-                    
-                    # Blue Left (Col 0): SHIFTED to the outer-most slanted edges
-                    # These indices move the segments from the "inside" to the "border"
-                    if c == 0:
+                    if c == 0: # Blue Left (Outer shifted)
                         pygame.draw.line(screen, BLUE, verts[1], verts[2], b_thick)
                         pygame.draw.line(screen, BLUE, verts[2], verts[3], b_thick)
-                    
-                    # Blue Right (Col n-1): SHIFTED to the outer-most slanted edges
-                    if c == board_size - 1:
+                    if c == board_size - 1: # Blue Right (Outer shifted)
                         pygame.draw.line(screen, BLUE, verts[4], verts[5], b_thick)
                         pygame.draw.line(screen, BLUE, verts[5], verts[0], b_thick)
-
-                    # Draw the Hexagon
-                    color = RED if game_board[r][c] == 1 else BLUE if game_board[r][c] == 2 else EMPTY_HEX_COLOR
-                    pygame.draw.polygon(screen, color, verts)
-                    pygame.draw.polygon(screen, BLACK, verts, 1)
 
                     # Draw Hex
                     color = RED if game_board[r][c] == 1 else BLUE if game_board[r][c] == 2 else EMPTY_HEX_COLOR
                     pygame.draw.polygon(screen, color, verts)
                     
-                    # Draw Win Outline or standard outline
                     if (r, c) in win_path:
                         pygame.draw.polygon(screen, GOLD, verts, 5)
                     else:
                         pygame.draw.polygon(screen, BLACK, verts, 1)
 
-        # UI Text
         msg_surf = font_medium.render(message, True, RED if current_player == 1 else BLUE)
         screen.blit(msg_surf, msg_surf.get_rect(center=(SCREEN_WIDTH // 2, 50)))
 
@@ -238,7 +198,6 @@ def play_gui_game(board_size):
             screen.blit(font_small.render("Change Mode", True, WHITE), font_small.render("Change Mode", True, WHITE).get_rect(center=replay_rect.center))
 
         pygame.display.flip()
-
     pygame.quit()
 
 if __name__ == "__main__":
