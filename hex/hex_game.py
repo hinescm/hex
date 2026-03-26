@@ -11,7 +11,7 @@ HEX_RADIUS = 42
 RED, BLUE, WHITE, GOLD = (220, 20, 60), (30, 144, 255), (255, 255, 255), (255, 215, 0)
 DARK_GRAY, BLACK, EMPTY_COLOR = (25, 25, 25), (0, 0, 0), (140, 140, 140)
 
-# --- Logic ---
+# --- Logic Functions ---
 def initialize_board(size): 
     return [[0]*size for _ in range(size)]
 
@@ -70,7 +70,7 @@ def get_hex_vertices(cx, cy, rad):
 def play_gui_game(size):
     pygame.init()
     screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-    pygame.display.set_caption("Hex & Brouwer: Topology Lab")
+    pygame.display.set_caption("Hex & Brouwer: Topology Lab (MAT 436)")
     
     font_s = pygame.font.Font(None, 24)
     font_m = pygame.font.Font(None, 32)
@@ -80,6 +80,7 @@ def play_gui_game(size):
     history_index = 0
     
     current_player, game_over, game_mode = 1, False, 'hvh'
+    sandbox_brush = 1 
     show_sperner, show_vectors, is_fullscreen = False, False, False
     
     left_origin, right_origin = (120, 200), (540, 200)
@@ -87,22 +88,27 @@ def play_gui_game(size):
     btn_w, btn_h = 175, 45
 
     btns = {
-        'hvh': {'text': 'Human vs Human', 'rect': pygame.Rect(sidebar_x, 50, btn_w, btn_h)},
-        'hva': {'text': 'Human vs AI', 'rect': pygame.Rect(sidebar_x, 100, btn_w, btn_h)},
-        'ava': {'text': 'AI vs AI', 'rect': pygame.Rect(sidebar_x, 150, btn_w, btn_h)},
-        'sperner': {'text': 'Toggle Sperner', 'rect': pygame.Rect(sidebar_x, 250, btn_w, btn_h)},
-        'vector': {'text': 'Toggle Vectors', 'rect': pygame.Rect(sidebar_x, 300, btn_w, btn_h)},
-        'fullscreen': {'text': 'Toggle Fullscreen', 'rect': pygame.Rect(sidebar_x, 350, btn_w, btn_h)},
-        'reset': {'text': 'Reset Board', 'rect': pygame.Rect(sidebar_x, 450, btn_w, btn_h)},
+        'hvh': {'text': 'Human vs Human', 'rect': pygame.Rect(sidebar_x, 30, btn_w, btn_h)},
+        'hva': {'text': 'Human vs AI', 'rect': pygame.Rect(sidebar_x, 80, btn_w, btn_h)},
+        'ava': {'text': 'AI vs AI', 'rect': pygame.Rect(sidebar_x, 130, btn_w, btn_h)},
+        'random': {'text': 'Sandbox Mode', 'rect': pygame.Rect(sidebar_x, 180, btn_w, btn_h)},
+        'brush_red': {'text': 'Red', 'rect': pygame.Rect(sidebar_x, 230, 55, btn_h)},
+        'brush_blue': {'text': 'Blue', 'rect': pygame.Rect(sidebar_x + 60, 230, 55, btn_h)},
+        'brush_clear': {'text': 'Clear', 'rect': pygame.Rect(sidebar_x + 120, 230, 55, btn_h)},
+        'sperner': {'text': 'Toggle Sperner', 'rect': pygame.Rect(sidebar_x, 330, btn_w, btn_h)},
+        'vector': {'text': 'Toggle Vectors', 'rect': pygame.Rect(sidebar_x, 380, btn_w, btn_h)},
+        'fullscreen': {'text': 'Toggle Fullscreen', 'rect': pygame.Rect(sidebar_x, 430, btn_w, btn_h)},
+        'reset': {'text': 'Reset Board', 'rect': pygame.Rect(sidebar_x, 530, btn_w, btn_h)},
         'prev': {'text': '< Prev Step', 'rect': pygame.Rect(350, 680, 150, 40)},
         'next': {'text': 'Next Step >', 'rect': pygame.Rect(520, 680, 150, 40)}
     }
 
     running = True
     while running:
-        is_ai = not game_over and history_index == len(history) - 1 and \
-                ((game_mode == 'ava') or (game_mode == 'hva' and current_player == 2))
-        
+        # Determine if it's the AI's turn
+        is_ai_turn = not game_over and history_index == len(history) - 1 and \
+                     ((game_mode == 'ava') or (game_mode == 'hva' and current_player == 2))
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT: running = False
             if event.type == pygame.KEYDOWN:
@@ -116,34 +122,44 @@ def play_gui_game(size):
                     screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.FULLSCREEN if is_fullscreen else 0)
                 elif btns['hvh']['rect'].collidepoint(mx, my): 
                     game_mode, game_board, history, history_index, game_over = 'hvh', initialize_board(size), [initialize_board(size)], 0, False
-                    current_player = 1
                 elif btns['hva']['rect'].collidepoint(mx, my): 
                     game_mode, game_board, history, history_index, game_over = 'hva', initialize_board(size), [initialize_board(size)], 0, False
-                    current_player = 1
                 elif btns['ava']['rect'].collidepoint(mx, my): 
                     game_mode, game_board, history, history_index, game_over = 'ava', initialize_board(size), [initialize_board(size)], 0, False
-                    current_player = 1
+                elif btns['random']['rect'].collidepoint(mx, my):
+                    game_mode = 'random'
+                    game_board = [[random.choice([0, 1, 2]) for _ in range(size)] for _ in range(size)]
+                    history.append([row[:] for row in game_board]); history_index = len(history)-1
+                    game_over = False
+                elif btns['brush_red']['rect'].collidepoint(mx, my): sandbox_brush = 1
+                elif btns['brush_blue']['rect'].collidepoint(mx, my): sandbox_brush = 2
+                elif btns['brush_clear']['rect'].collidepoint(mx, my): sandbox_brush = 0
                 elif btns['sperner']['rect'].collidepoint(mx, my): show_sperner = not show_sperner
                 elif btns['vector']['rect'].collidepoint(mx, my): show_vectors = not show_vectors
                 elif btns['reset']['rect'].collidepoint(mx, my):
-                    game_board, history, history_index, game_over = initialize_board(size), [initialize_board(size)], 0, False
-                    current_player = 1
+                    game_board, history, history_index, game_over, current_player = initialize_board(size), [initialize_board(size)], 0, False, 1
                 elif btns['prev']['rect'].collidepoint(mx, my) and history_index > 0: history_index -= 1
                 elif btns['next']['rect'].collidepoint(mx, my) and history_index < len(history) - 1: history_index += 1
-                elif not game_over and history_index == len(history) - 1 and not is_ai:
+                
+                # Manual Clicks
+                elif not game_over and history_index == len(history) - 1 and not is_ai_turn:
                     for r in range(size):
                         for c in range(size):
                             cx, cy = _get_relative_hex_center(r, c, HEX_RADIUS)
                             px, py = cx + left_origin[0], cy + left_origin[1]
-                            if math.sqrt((mx-px)**2 + (my-py)**2) < HEX_RADIUS and game_board[r][c] == 0:
-                                game_board[r][c] = current_player
+                            if math.sqrt((mx-px)**2 + (my-py)**2) < HEX_RADIUS:
+                                if game_mode == 'random':
+                                    game_board[r][c] = sandbox_brush
+                                elif game_board[r][c] == 0:
+                                    game_board[r][c] = current_player
+                                    current_player = 3 - current_player
                                 history.append([row[:] for row in game_board])
                                 history_index += 1
-                                if find_winning_path(game_board, current_player): game_over = True
-                                else: current_player = 3 - current_player
+                                if find_winning_path(game_board, 1) or find_winning_path(game_board, 2): game_over = True
 
-        if is_ai:
-            pygame.time.delay(400)
+        # AI Move Logic
+        if is_ai_turn:
+            pygame.time.delay(500)
             avail = [(r, c) for r in range(size) for c in range(size) if game_board[r][c] == 0]
             if avail:
                 r, c = random.choice(avail)
@@ -155,59 +171,62 @@ def play_gui_game(size):
 
         screen.fill(DARK_GRAY)
         display_board = history[history_index]
-        current_win_path = find_winning_path(display_board, 1) or find_winning_path(display_board, 2) or []
         s_triangles = find_sperner_triangles(display_board)
+        win_path = find_winning_path(display_board, 1) or find_winning_path(display_board, 2) or []
 
         # --- Draw Boards ---
         for r in range(size):
             for c in range(size):
                 cx, cy = _get_relative_hex_center(r, c, HEX_RADIUS)
-                lx, ly = cx + left_origin[0], cy + left_origin[1]
+                lx, ly, rx, ry = cx + left_origin[0], cy + left_origin[1], cx + right_origin[0], cy + right_origin[1]
                 v_l = get_hex_vertices(lx, ly, HEX_RADIUS)
                 
-                # Boundaries
+                # Borders
                 t = 7
                 if r == 0: pygame.draw.line(screen, RED, v_l[4], v_l[5], t); pygame.draw.line(screen, RED, v_l[3], v_l[4], t)
                 if r == size-1: pygame.draw.line(screen, RED, v_l[0], v_l[1], t); pygame.draw.line(screen, RED, v_l[1], v_l[2], t)
                 if c == 0: pygame.draw.line(screen, BLUE, v_l[1], v_l[2], t); pygame.draw.line(screen, BLUE, v_l[2], v_l[3], t)
                 if c == size-1: pygame.draw.line(screen, BLUE, v_l[4], v_l[5], t); pygame.draw.line(screen, BLUE, v_l[5], v_l[0], t)
 
+                # Hexes
                 color = RED if display_board[r][c]==1 else BLUE if display_board[r][c]==2 else EMPTY_COLOR
                 pygame.draw.polygon(screen, color, v_l)
-                pygame.draw.polygon(screen, GOLD if (r,c) in current_win_path else BLACK, v_l, 5 if (r,c) in current_win_path else 1)
+                pygame.draw.polygon(screen, GOLD if (r,c) in win_path else BLACK, v_l, 4 if (r,c) in win_path else 1)
 
-                rx, ry = cx + right_origin[0], cy + right_origin[1]
+                # Dual Graph / Vectors
                 for nr, nc in get_neighbors(r, c, size):
                     ncx, ncy = _get_relative_hex_center(nr, nc, HEX_RADIUS)
-                    pygame.draw.line(screen, (80,80,80), (rx, ry), (ncx+right_origin[0], ncy+right_origin[1]), 2)
-                node_c = RED if display_board[r][c]==1 else BLUE if display_board[r][c]==2 else WHITE
-                pygame.draw.circle(screen, node_c, (int(rx), int(ry)), 14)
-
+                    pygame.draw.line(screen, (70, 70, 70), (rx, ry), (ncx+right_origin[0], ncy+right_origin[1]), 1)
+                
                 if show_vectors:
-                    angle = math.atan2(ry - (WINDOW_HEIGHT/2), rx - (WINDOW_WIDTH/2))
-                    vx, vy = math.cos(angle)*15, math.sin(angle)*15
-                    pygame.draw.line(screen, GOLD, (rx, ry), (rx-vx, ry-vy), 2)
+                    dirs = {1: (0, -1), 2: (1, 0.5), 0: (-1, 0.5)}
+                    vx, vy = dirs[display_board[r][c]]
+                    pygame.draw.line(screen, GOLD, (rx, ry), (rx + vx*22, ry + vy*22), 2)
+                
+                node_c = RED if display_board[r][c]==1 else BLUE if display_board[r][c]==2 else WHITE
+                pygame.draw.circle(screen, node_c, (int(rx), int(ry)), 12)
 
         if show_sperner:
             for tri in s_triangles:
-                pts = [(_get_relative_hex_center(tr, tc, HEX_RADIUS)[0]+right_origin[0], _get_relative_hex_center(tr, tc, HEX_RADIUS)[1]+right_origin[1]) for tr, tc in tri]
-                pygame.draw.polygon(screen, GOLD, pts, 5)
+                avg_x = sum(_get_relative_hex_center(tr, tc, HEX_RADIUS)[0] for tr, tc in tri) / 3
+                avg_y = sum(_get_relative_hex_center(tr, tc, HEX_RADIUS)[1] for tr, tc in tri) / 3
+                pygame.draw.circle(screen, GOLD, (int(avg_x + right_origin[0]), int(avg_y + right_origin[1])), 10)
+                pygame.draw.circle(screen, WHITE, (int(avg_x + right_origin[0]), int(avg_y + right_origin[1])), 14, 2)
 
-        # Status Display (No Sperner Counter)
-        status = f"Step {history_index} / {len(history)-1}"
+        # UI & Buttons
+        status = f"MODE: {game_mode.upper()} | STEP: {history_index}"
         screen.blit(font_m.render(status, True, WHITE), (50, 40))
-
-        # --- Buttons ---
         for k, v in btns.items():
-            active = (k == game_mode) or (k == 'sperner' and show_sperner) or (k == 'vector' and show_vectors) or (k == 'fullscreen' and is_fullscreen)
-            b_color = (90, 90, 90) if active else (60, 60, 60)
+            active = (k == game_mode) or (k == 'sperner' and show_sperner) or (k == 'vector' and show_vectors) or \
+                     (k == 'brush_red' and sandbox_brush == 1 and game_mode == 'random') or \
+                     (k == 'brush_blue' and sandbox_brush == 2 and game_mode == 'random') or \
+                     (k == 'brush_clear' and sandbox_brush == 0 and game_mode == 'random') or (k == 'fullscreen' and is_fullscreen)
+            
+            b_color = (120, 120, 120) if active else (60, 60, 60)
             if k == 'reset': b_color = (180, 0, 0)
-            if (k == 'prev' and history_index == 0) or (k == 'next' and history_index == len(history)-1): b_color = (40, 40, 40)
-
             pygame.draw.rect(screen, b_color, v['rect'], border_radius=5)
             if active: pygame.draw.rect(screen, GOLD, v['rect'], width=3, border_radius=5)
-            t_color = GOLD if active else WHITE
-            screen.blit(font_s.render(v['text'], True, t_color), font_s.render(v['text'], True, t_color).get_rect(center=v['rect'].center))
+            screen.blit(font_s.render(v['text'], True, WHITE), font_s.render(v['text'], True, WHITE).get_rect(center=v['rect'].center))
 
         pygame.display.flip()
     pygame.quit()
